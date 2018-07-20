@@ -5,13 +5,6 @@ cv::Mat l_frame;
 cv::VideoCapture *capture;
 QImage image;  // 存放已经转换好的图像
 
-// 先预设登录信息
-char szDevIp[64] = {"lab.zhuzhuguowang.cn"};
-NET_DEVICEINFO stDevInfo = {0};
-int nError = 0;
-int nPort = 36956;
-long lLoginHandle = 0;
-
 // 以下是内建函数
 Widget::Widget(QWidget *parent) :
     QWidget(parent),
@@ -49,108 +42,88 @@ void Widget::ConsoleAppend(QString newString)
 
 void Widget::on_LoginButton_clicked()
 {
-    lLoginHandle = CLIENT_LoginEx2(szDevIp, nPort, "admin", "123456", EM_LOGIN_SPEC_CAP_TCP,NULL,NULL, &nError);
-    if(!lLoginHandle)
-    {
-        ConsoleAppend("Login Failed!\n");
+    InitTest();
+    ConsoleAppend("Login Succeeded! loginhandle:");
+    ConsoleAppend(QString::number(g_lLoginHandle));
+    ConsoleAppend("\n");
 
-        // 登录失败时播放测试用视频
-        capture = new cv::VideoCapture("VideoTest.avi");
-        if (!capture->isOpened())
-        {
-            ConsoleAppend("video not open.\n");
-            return;
-        }
+    capture = new cv::VideoCapture("rtsp://admin:123456@192.168.73.110:36955/cam/realmonitor?channel=1&subtype=0");
 
-        double rate = capture->get(CV_CAP_PROP_FPS);
-        int delay = 1000 / rate;
-        timer->start(delay);
-    }
-    else  // 登录成功
-    {
-        qDebug() << "Login Succeeded!" << endl;
-        ConsoleAppend("Login Succeeded! loginhandle:");
-        ConsoleAppend(QString::number(lLoginHandle));
-        ConsoleAppend("\n");
-        capture = new cv::VideoCapture("rtsp://admin:123456@lab.zhuzhuguowang.cn:36955/cam/realmonitor?channel=1&subtype=0");
+    // 多线程工作信号的激活
+    workerThread.start();
+    emit operate();
 
-       // 多线程工作信号的激活
-        workerThread.start();
-        emit operate();
-
-        // 定时器启动
-        timer->start(66);
-    }
+    // 定时器启动
+    timer->start(66);
 }
-
 
 
 void Widget::on_upButton_pressed()
 {
-    CLIENT_DHPTZControlEx2(lLoginHandle, 0, DH_PTZ_UP_CONTROL, 0, 1, 0, FALSE,NULL);
+    CLIENT_DHPTZControlEx2(g_lLoginHandle, 0, DH_PTZ_UP_CONTROL, 0, 1, 0, FALSE,NULL);
     //ConsoleAppend("Up!\n");
 }
 
 void Widget::on_upButton_released()
 {
-    CLIENT_DHPTZControlEx2(lLoginHandle, 0, DH_PTZ_UP_CONTROL, 0, 1, 0, TRUE,NULL);
+    CLIENT_DHPTZControlEx2(g_lLoginHandle, 0, DH_PTZ_UP_CONTROL, 0, 1, 0, TRUE,NULL);
     //ConsoleAppend("Stop!\n");
 }
 
 void Widget::on_DownButton_pressed()
 {
-    CLIENT_DHPTZControlEx2(lLoginHandle,0,DH_PTZ_DOWN_CONTROL,0,1,0,FALSE,NULL);
+    CLIENT_DHPTZControlEx2(g_lLoginHandle,0,DH_PTZ_DOWN_CONTROL,0,1,0,FALSE,NULL);
     //ConsoleAppend("Down!\n");
 }
 
 void Widget::on_DownButton_released()
 {
-    CLIENT_DHPTZControlEx2(lLoginHandle,0,DH_PTZ_DOWN_CONTROL,0,1,0,TRUE,NULL);
+    CLIENT_DHPTZControlEx2(g_lLoginHandle,0,DH_PTZ_DOWN_CONTROL,0,1,0,TRUE,NULL);
     //ConsoleAppend("Stop!\n");
 }
 
 void Widget::on_LeftButton_pressed()
 {
-    CLIENT_DHPTZControlEx2(lLoginHandle,0,DH_PTZ_LEFT_CONTROL,0,1,0,FALSE,NULL);
+    CLIENT_DHPTZControlEx2(g_lLoginHandle,0,DH_PTZ_LEFT_CONTROL,0,1,0,FALSE,NULL);
     //ConsoleAppend("Left!\n");
 }
 
 void Widget::on_LeftButton_released()
 {
-    CLIENT_DHPTZControlEx2(lLoginHandle,0,DH_PTZ_LEFT_CONTROL,0,1,0,TRUE,NULL);
+    CLIENT_DHPTZControlEx2(g_lLoginHandle,0,DH_PTZ_LEFT_CONTROL,0,1,0,TRUE,NULL);
     //ConsoleAppend("Stop!\n");
 }
 
 void Widget::on_RightButton_pressed()
 {
-    CLIENT_DHPTZControlEx2(lLoginHandle,0,DH_PTZ_RIGHT_CONTROL,0,1,0,FALSE,NULL);
+    CLIENT_DHPTZControlEx2(g_lLoginHandle,0,DH_PTZ_RIGHT_CONTROL,0,1,0,FALSE,NULL);
     //ConsoleAppend("Right!\n");
 }
 
 void Widget::on_RightButton_released()
 {
-    CLIENT_DHPTZControlEx2(lLoginHandle,0,DH_PTZ_RIGHT_CONTROL,0,1,0,TRUE,NULL);
+    CLIENT_DHPTZControlEx2(g_lLoginHandle,0,DH_PTZ_RIGHT_CONTROL,0,1,0,TRUE,NULL);
     //ConsoleAppend("Stop!\n");
 }
 
 void Widget::on_plusButton_pressed()
 {
-    CLIENT_DHPTZControlEx2(lLoginHandle,0,DH_PTZ_ZOOM_ADD_CONTROL,0,1,0,FALSE,NULL);
+    CLIENT_DHPTZControlEx2(g_lLoginHandle,0,DH_PTZ_ZOOM_ADD_CONTROL,0,1,0,FALSE,NULL);
 }
 
 void Widget::on_plusButton_released()
 {
-    CLIENT_DHPTZControlEx2(lLoginHandle,0,DH_PTZ_ZOOM_ADD_CONTROL,0,1,0,TRUE,NULL);
+    CLIENT_DHPTZControlEx2(g_lLoginHandle,0,DH_PTZ_ZOOM_ADD_CONTROL,0,1,0,TRUE,NULL);
 }
 
 void Widget::on_minusButton_pressed()
 {
-    CLIENT_DHPTZControlEx2(lLoginHandle,0,DH_PTZ_ZOOM_DEC_CONTROL,0,1,0,FALSE,NULL);
+    CLIENT_DHPTZControlEx2(g_lLoginHandle,0,DH_PTZ_ZOOM_DEC_CONTROL,0,1,0,FALSE,NULL);
 }
 
 void Widget::on_minusButton_released()
 {
-    CLIENT_DHPTZControlEx2(lLoginHandle,0,DH_PTZ_ZOOM_DEC_CONTROL,0,1,0,TRUE,NULL);
+    CLIENT_DHPTZControlEx2(g_lLoginHandle,0,DH_PTZ_ZOOM_DEC_CONTROL,0,1,0,TRUE,NULL);
 }
 
 void Widget::on_GoButton_clicked()
@@ -161,7 +134,11 @@ void Widget::on_GoButton_clicked()
     h = this->ui->hLineEdit->text().toInt();
     v = this->ui->vLineEdit->text().toInt();
     x = this->ui->xLineEdit->text().toInt();
-    CLIENT_DHPTZControlEx2(lLoginHandle,0,DH_EXTPTZ_EXACTGOTO,h,v,x,FALSE,NULL);
+    if (FALSE == CLIENT_DHPTZControlEx2(g_lLoginHandle,0,DH_EXTPTZ_EXACTGOTO,h,v,x,FALSE,NULL))
+    {
+        ConsoleAppend("CLIENT_DHPTZControlEx2 Failed! Last Error: \n");
+        ConsoleAppend(QString::number(int(CLIENT_GetLastError()&(0x7fffffff))));
+    }
     ConsoleAppend("h = ");
     ConsoleAppend(QString::number(h));
     ConsoleAppend("\n");
@@ -176,7 +153,8 @@ void Widget::on_GoButton_clicked()
 void Widget::on_LogoutButton_clicked()
 {
     timer->stop();
-    CLIENT_Logout(lLoginHandle);
+    workerThread.quit();
+    CLIENT_Logout(g_lLoginHandle);
     CLIENT_Cleanup();
     this->close();
 }
@@ -196,16 +174,16 @@ void Widget::keyPressEvent(QKeyEvent *event)
     switch(event->key())
     {
 
-    case Qt::Key_W: CLIENT_DHPTZControlEx2(lLoginHandle, 0, DH_PTZ_UP_CONTROL, 0, SPD, 0, FALSE, NULL);
+    case Qt::Key_W: CLIENT_DHPTZControlEx2(g_lLoginHandle, 0, DH_PTZ_UP_CONTROL, 0, SPD, 0, FALSE, NULL);
                     break;
 
-    case Qt::Key_S: CLIENT_DHPTZControlEx2(lLoginHandle, 0, DH_PTZ_DOWN_CONTROL, 0, SPD, 0, FALSE, NULL);
+    case Qt::Key_S: CLIENT_DHPTZControlEx2(g_lLoginHandle, 0, DH_PTZ_DOWN_CONTROL, 0, SPD, 0, FALSE, NULL);
                     break;
 
-    case Qt::Key_A: CLIENT_DHPTZControlEx2(lLoginHandle, 0, DH_PTZ_LEFT_CONTROL, 0, SPD, 0, FALSE, NULL);
+    case Qt::Key_A: CLIENT_DHPTZControlEx2(g_lLoginHandle, 0, DH_PTZ_LEFT_CONTROL, 0, SPD, 0, FALSE, NULL);
                     break;
 
-    case Qt::Key_D: CLIENT_DHPTZControlEx2(lLoginHandle, 0, DH_PTZ_RIGHT_CONTROL, 0, SPD, 0, FALSE, NULL);
+    case Qt::Key_D: CLIENT_DHPTZControlEx2(g_lLoginHandle, 0, DH_PTZ_RIGHT_CONTROL, 0, SPD, 0, FALSE, NULL);
                     break;
     }
 
@@ -217,16 +195,16 @@ void Widget::keyReleaseEvent(QKeyEvent *event)
     switch(event->key())
     {
 
-    case Qt::Key_W: CLIENT_DHPTZControlEx2(lLoginHandle, 0, DH_PTZ_UP_CONTROL, 0, SPD, 0, TRUE, NULL);
+    case Qt::Key_W: CLIENT_DHPTZControlEx2(g_lLoginHandle, 0, DH_PTZ_UP_CONTROL, 0, SPD, 0, TRUE, NULL);
                     break;
 
-    case Qt::Key_S: CLIENT_DHPTZControlEx2(lLoginHandle, 0, DH_PTZ_DOWN_CONTROL, 0, SPD, 0, TRUE, NULL);
+    case Qt::Key_S: CLIENT_DHPTZControlEx2(g_lLoginHandle, 0, DH_PTZ_DOWN_CONTROL, 0, SPD, 0, TRUE, NULL);
                     break;
 
-    case Qt::Key_A: CLIENT_DHPTZControlEx2(lLoginHandle, 0, DH_PTZ_LEFT_CONTROL, 0, SPD, 0, TRUE, NULL);
+    case Qt::Key_A: CLIENT_DHPTZControlEx2(g_lLoginHandle, 0, DH_PTZ_LEFT_CONTROL, 0, SPD, 0, TRUE, NULL);
                     break;
 
-    case Qt::Key_D: CLIENT_DHPTZControlEx2(lLoginHandle, 0, DH_PTZ_RIGHT_CONTROL, 0, SPD, 0, TRUE, NULL);
+    case Qt::Key_D: CLIENT_DHPTZControlEx2(g_lLoginHandle, 0, DH_PTZ_RIGHT_CONTROL, 0, SPD, 0, TRUE, NULL);
                     break;
     }
 }
@@ -246,31 +224,57 @@ void Widget::mousePressEvent(QMouseEvent *event)
         }
 }
 
+// 以下是大华SDK相关函数
 
-//一个失败的函数，原来打算用滚轮控制焦距的
-/*void Delay(int time)  // time*1000为秒数
+void CALLBACK Widget::DisconnectFunc(long long lLoginID, char *pchDVRIP, LONG nDVRPort, long long dwUser)
 {
-    clock_t now = clock();
-
-    while(clock()-now < time);
+    std::cout << "DisconnectFunc called.\n";
 }
 
-void Widget::wheelEvent(QWheelEvent*event)
+void CALLBACK Widget::HaveReConnect(long long lLoginID, char *pchDVRIP, LONG nDVRPort, long long dwUser)
+
 {
+    std::cout << "Have Reconnected.\n";
+}
 
-    if(event->delta()>0)  // 如果滚轮往上滚
-       {
-            CLIENT_DHPTZControlEx2(lLoginHandle,0,DH_PTZ_ZOOM_ADD_CONTROL,0,1,0,FALSE,NULL);
-
-            CLIENT_DHPTZControlEx2(lLoginHandle,0,DH_PTZ_ZOOM_ADD_CONTROL,0,1,0,TRUE,NULL);
-       }
-
-    else  // 同样的
+void Widget::InitTest()
+{
+    using namespace std;
+    // SDK初始化函数
+    g_bNetSDKInitFlag = CLIENT_Init(NULL, 0);
+    if (!g_bNetSDKInitFlag)
     {
-       CLIENT_DHPTZControlEx2(lLoginHandle,0,DH_PTZ_ZOOM_DEC_CONTROL,0,1,0,FALSE,NULL);
-       CLIENT_DHPTZControlEx2(lLoginHandle,0,DH_PTZ_ZOOM_DEC_CONTROL,0,1,0,TRUE,NULL);
+        cout << "Initialize client SDK fail.\n";
+        return;
     }
-}*/
+    else
+    {
+        cout << "Initialize client SDK done.\n";
+        DWORD dwNetSdkVersion = CLIENT_GetSDKVersion();
+        cout << "SDK Version: " << dwNetSdkVersion << endl;
+    }
+
+    // 设置断线重连函数回调接口，设置过之后，当设备出现断线情况，SDK内部会进行重连操作
+    CLIENT_SetAutoReconnect(NULL, 0);
+
+    // 设置登录超时时间和尝试次数
+    CLIENT_SetConnectTime(5000, 3);
+
+    // 登录设备
+
+    NET_DEVICEINFO_Ex stDevInfoEx = { 0 };
+    int nError = 0;
+    while (!g_lLoginHandle)
+    {
+        g_lLoginHandle = CLIENT_LoginEx2(g_szDevIp, g_nPort, g_szUserName, g_szPasswd, EM_LOGIN_SPEC_CAP_TCP, NULL, &stDevInfoEx, &nError);
+
+        if (!g_lLoginHandle)  // 登陆失败的场合
+        {
+            cout << "Login Failed! Last Error: " << int(CLIENT_GetLastError()&(0x7fffffff)) << endl;
+        }
+    }
+
+}
 
 
 ////////////////////////////////////////////////////////////////
@@ -340,4 +344,5 @@ QImage Worker ::cvMat2QImage(const cv::Mat& mat)
         return QImage();
     }
 }
+
 

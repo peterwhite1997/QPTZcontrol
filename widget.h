@@ -42,6 +42,22 @@ public:
     void KNN();
 
 
+    // 大华控制函数的声明
+    BOOL g_bNetSDKInitFlag;
+    LLONG g_lLoginHandle = 0L;
+    char g_szDevIp[32] = "192.168.73.110";
+    WORD g_nPort = 36956;
+
+    char g_szUserName[64] = "admin";
+    char g_szPasswd[64] = "123456";
+
+    void InitTest();
+    void CALLBACK HaveReConnect(long long lLoginID, char *pchDVRIP, LONG nDVRPort, long long dwUser);
+    void CALLBACK DisconnectFunc(long long lLoginID, char *pchDVRIP, LONG nDVRPort, long long dwUser);
+
+
+
+
 private slots:
     void on_LoginButton_clicked();
 
